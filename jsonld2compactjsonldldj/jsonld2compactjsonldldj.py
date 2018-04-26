@@ -53,7 +53,7 @@ def yield_obj(path,basepath):
                 builder.event(event,val)
             except:
                 if hasattr(builder,"value"):
-                    print(builder.value)
+                    sys.stderr.write("error in json: "+str(builder.value)+"\n")
             if prefix==basepath and event=="end_map":
                 if hasattr(builder,"value"):
                     yield builder.value
