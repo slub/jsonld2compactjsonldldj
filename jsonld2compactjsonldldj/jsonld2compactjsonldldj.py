@@ -53,7 +53,7 @@ def yield_obj(path,basepath):
                 builder.event(event,val)
             except:
                 if hasattr(builder,"value"):
-                    sys.stderr.write("error in json: "+str(builder.value)+"\n")
+                    print(builder.value)
             if prefix==basepath and event=="end_map":
                 if hasattr(builder,"value"):
                     yield builder.value
@@ -77,15 +77,17 @@ def run():
     optional_arguments.add_argument('-prefix',type=str,default="chunks/record-",help="a prefix for the multiprocessed outputfiles, could also be a path",dest="prefix")
     
     optional_arguments.add_argument('-split-bnodes',dest="bnode",action="store_true",help="activate this switch to seperate bnodes into extra chunks")
+    
+    optional_arguments.add_argument('-workers',dest="worker",default=8,type=int,help="number of workers to use")
 
     parser._action_groups.append(optional_arguments)
 
     args = parser.parse_args()
-    process(args.input,args.record_field,args.context_url,args.prefix,args.bnode)
+    process(args.input,args.record_field,args.context_url,args.prefix,args.bnode,args.worker)
 
 
 #put this into a function to able to use jsonld2compactjsonldldj as a lib
-def process(input,record_field,context_url,pathprefix,bnode):
+def process(input,record_field,context_url,pathprefix,bnode,worker):
     r=requests.get(context_url)
     if r.ok:
         jsonldcontext=r.json()
@@ -94,7 +96,7 @@ def process(input,record_field,context_url,pathprefix,bnode):
         sys.stderr.write("unable to get context from {}. aborting\n".format(context_url))
         exit(-1)
     
-    pool = Pool(12,initializer=init_mp,initargs=(jsonldcontext,record_field,context_url,pathprefix,bnode,))
+    pool = Pool(worker,initializer=init_mp,initargs=(jsonldcontext,record_field,context_url,pathprefix,bnode,))
     #init_mp(jsonldcontext,record_field,context_url,pathprefix,bnode)
     #item.item = go down 2 (array-)levels as in jsonld-1.1 spec
     for obj in yield_obj(input,"item.item"):
