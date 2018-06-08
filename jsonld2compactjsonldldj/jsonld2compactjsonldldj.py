@@ -38,6 +38,14 @@ def compact_object(jsonobject):
             compacted = jsonld.compact(jsonobject, context,  {'skipExpansion': True})
             if context_url:
                 compacted['@context'] = context_url#
+            for date in ["dateOfBirth","dateOfDeath"]:
+                if isinstance(compacted.get(date),str):
+                    compacted.pop(date)
+                if isinstance(compacted.get("gndIdentifier"),list):
+                    compacted["gndIdentifier"]=compacted.pop("gndIdentifier")[0]
+            for fix in ["definition"]:
+                if isinstance(compacted.get(fix),dict):
+                    compacted.pop(fix)
             if (node and compacted.get("@id") and compacted.get("@id").startswith("_:")) or (node and compacted.get("id") and compacted.get("id").startswith("_:")):
                 with open(pathprefix+str(current_process().name)+"-bnodes.ldj","a") as fileout:           ###avoid raceconditions
                     fileout.write(json.dumps(compacted, indent=None) + "\n")
@@ -80,14 +88,16 @@ def run():
     
     optional_arguments.add_argument('-workers',dest="worker",default=8,type=int,help="number of workers to use")
 
+    optional_arguments.add_argument('-ldj',dest="ldj",default=False,action="store_true",help="switch on if you want to process line-delimited json, instead of json-arrays")
+
     parser._action_groups.append(optional_arguments)
 
     args = parser.parse_args()
-    process(args.input,args.record_field,args.context_url,args.prefix,args.bnode,args.worker)
+    process(args.input,args.record_field,args.context_url,args.prefix,args.bnode,args.worker,args.ldj)
 
 
 #put this into a function to able to use jsonld2compactjsonldldj as a lib
-def process(input,record_field,context_url,pathprefix,bnode,worker):
+def process(input,record_field,context_url,pathprefix,bnode,worker,ldj):
     r=requests.get(context_url)
     if r.ok:
         jsonldcontext=r.json()
@@ -99,9 +109,19 @@ def process(input,record_field,context_url,pathprefix,bnode,worker):
     pool = Pool(worker,initializer=init_mp,initargs=(jsonldcontext,record_field,context_url,pathprefix,bnode,))
     #init_mp(jsonldcontext,record_field,context_url,pathprefix,bnode)
     #item.item = go down 2 (array-)levels as in jsonld-1.1 spec
-    for obj in yield_obj(input,"item.item"):
-        #compact_object(obj)
-        pool.apply_async(compact_object,(obj,))
+    if ldj:
+        with open(input,"r") as inp:
+            for line in inp:
+                try:
+                    jline=json.loads(line)
+                except:
+                    continue
+                    #malicious json
+                pool.apply_async(compact_object,(jline,))
+    else:
+        for obj in yield_obj(input,"item.item"):
+            #compact_object(obj)
+            pool.apply_async(compact_object,(obj,))
     pool.close()
     pool.join()
 
