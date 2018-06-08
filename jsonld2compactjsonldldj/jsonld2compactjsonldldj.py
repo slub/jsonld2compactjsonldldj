@@ -38,14 +38,6 @@ def compact_object(jsonobject):
             compacted = jsonld.compact(jsonobject, context,  {'skipExpansion': True})
             if context_url:
                 compacted['@context'] = context_url#
-            for date in ["dateOfBirth","dateOfDeath"]:
-                if isinstance(compacted.get(date),str):
-                    compacted.pop(date)
-                if isinstance(compacted.get("gndIdentifier"),list):
-                    compacted["gndIdentifier"]=compacted.pop("gndIdentifier")[0]
-            for fix in ["definition"]:
-                if isinstance(compacted.get(fix),dict):
-                    compacted.pop(fix)
             if (node and compacted.get("@id") and compacted.get("@id").startswith("_:")) or (node and compacted.get("id") and compacted.get("id").startswith("_:")):
                 with open(pathprefix+str(current_process().name)+"-bnodes.ldj","a") as fileout:           ###avoid raceconditions
                     fileout.write(json.dumps(compacted, indent=None) + "\n")
