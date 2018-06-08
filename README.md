@@ -17,6 +17,7 @@ optional arguments:
   -input INPUT                  the input JSON-LD record array (default: None)
   -record-field RECORD_FIELD    A field that should be contained in all records, e.g., a record identifier (this field will be used to identify records) (default: None)
   -context-url CONTEXT_URL      A JSON-LD context URL that should be set to reference to the JSON-LD context (instead of inline the JSON-LD context) (default: None)
+  -ldj                          Switch to one if the data is in non-compacted, line-delimited JSON format.
 ```
 
 * example:
